@@ -25,6 +25,6 @@ const app = new Elysia()
     .use(mappingRoutes)
     .use(receiptRoutes)
   )
-  .listen(3000)
+  .listen(process.env.PORT || 3000)
 
 console.log(`Server running at http://localhost:3000`)

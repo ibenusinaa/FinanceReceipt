@@ -8,9 +8,7 @@ const pool = mysql.createPool({
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'finance_receipt',
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: process.env.DB_SSL === 'false' ? undefined : { rejectUnauthorized: false },
 })
 
 export const db = drizzle(pool, { schema, mode: 'default' })

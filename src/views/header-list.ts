@@ -113,9 +113,10 @@ export function headerListPage(headers: HeaderRow[], filters: Record<string, str
         Reset
       </button>
       <div class="ml-auto">
-        <form hx-encoding="multipart/form-data" hx-post="/upload" hx-target="#modal-container" hx-swap="afterbegin"
+        <form hx-encoding="multipart/form-data" hx-post="/upload" hx-target="#modal-container" hx-swap="innerHTML"
               hx-trigger="change from:#file-input" class="inline">
-          <input type="file" id="file-input" name="file" accept=".xlsx,.xls" class="hidden">
+          <input type="file" id="file-input" name="file" accept=".xlsx,.xls" class="hidden"
+                 onchange="setTimeout(() => this.value = '', 300)">
         </form>
         <button onclick="document.getElementById('file-input').click()"
                 class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1.5 rounded text-sm">

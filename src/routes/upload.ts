@@ -4,7 +4,7 @@ import { transactionHeaders, transactions } from '../db/schema'
 import { parseExcel } from '../services/excel'
 import { modal, previewContent } from '../views/components/modal'
 
-const previewStore = new Map<string, { rows: Record<string, string | number>[], bank: string }>()
+const previewStore = new Map<string, { rows: Record<string, string | number>[] }>()
 
 export const uploadRoutes = new Elysia()
   .post('/upload', async ({ body }) => {
@@ -18,16 +18,14 @@ export const uploadRoutes = new Elysia()
     }
 
     const saveId = crypto.randomUUID()
-    previewStore.set(saveId, { rows: result.rows, bank: result.bank })
+    previewStore.set(saveId, { rows: result.rows })
 
     const content = previewContent(
-      result.rows, result.bank, result.totalValid, result.totalInvalid, result.errors, saveId
+      result.rows, result.banks, result.totalValid, result.totalInvalid, result.errors, saveId
     )
 
     const previewModal = `
-<div id="preview-modal-container">
-  ${modal('upload-preview', 'Preview Upload', content, true)}
-</div>
+${modal('upload-preview', 'Preview Upload', content, true)}
 <script>
   document.getElementById('upload-preview-save-btn').addEventListener('click', () => {
     const id = document.getElementById('save-id')!.value
@@ -56,19 +54,26 @@ export const uploadRoutes = new Elysia()
 
     try {
       await db.transaction(async (tx) => {
-        const [header] = await tx.insert(transactionHeaders).values({
-          bank: data.bank as 'BCA' | 'MUFG' | 'HSBC',
-          uploadDate: new Date(),
-          totalTransactions: data.rows.length,
-          unmappedCount: data.rows.length,
-          mappedCount: 0,
-          status: 'Draft',
-        }).$returningId()
+        const byBank: Record<string, typeof data.rows> = {}
+        for (const row of data.rows) {
+          const bank = String(row.bank)
+          if (!byBank[bank]) byBank[bank] = []
+          byBank[bank]!.push(row)
+        }
 
-        if (!header) throw new Error('Failed to create header')
+        for (const [bank, bankRows] of Object.entries(byBank)) {
+          const [header] = await tx.insert(transactionHeaders).values({
+            bank: bank as 'BCA' | 'MUFG' | 'HSBC',
+            uploadDate: new Date(),
+            totalTransactions: bankRows.length,
+            unmappedCount: bankRows.length,
+            mappedCount: 0,
+            status: 'Draft',
+          }).$returningId()
 
-        if (data.rows.length > 0) {
-          const txRows = data.rows.map((r) => {
+          if (!header) throw new Error('Failed to create header')
+
+          const txRows = bankRows.map((r) => {
             const dateStr = String(r.transactionDate).replace(/[^0-9\-]/g, '')
             return {
               headerId: header.id,

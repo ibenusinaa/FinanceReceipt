@@ -24,15 +24,20 @@ export function modal(id: string, title: string, body: string, showSave: boolean
 </div>`
 }
 
-export function previewContent(rows: Record<string, string | number>[], bank: string, totalValid: number, totalInvalid: number, errors: string[], saveId: string): string {
+export function previewContent(rows: Record<string, string | number>[], banks: Record<string, number>, totalValid: number, totalInvalid: number, errors: string[], saveId: string): string {
   const rowLimit = 10
   const displayRows = rows.slice(0, rowLimit)
+
+  const bankList = Object.entries(banks)
+    .map(([name, count]) => `${name} (${count})`)
+    .join(', ')
 
   const rowsHtml = displayRows.map((r, i) => `
     <tr class="border-b text-sm ${i % 2 === 0 ? 'bg-gray-50' : ''}">
       <td class="px-3 py-2">${i + 1}</td>
       <td class="px-3 py-2">${r.transactionNo}</td>
       <td class="px-3 py-2">${r.transactionDate}</td>
+      <td class="px-3 py-2">${r.bank}</td>
       <td class="px-3 py-2">${r.senderName}</td>
       <td class="px-3 py-2 text-right">${Number(r.amount).toLocaleString('id-ID')}</td>
     </tr>`
@@ -47,7 +52,7 @@ export function previewContent(rows: Record<string, string | number>[], bank: st
   return `
 <div class="text-sm mb-4">
   <p class="mb-1"><span class="text-green-600 font-medium">${totalValid} rows imported</span>${totalInvalid > 0 ? ` · <span class="text-red-600 font-medium">${totalInvalid} rows skipped</span>` : ''}</p>
-  <p class="text-gray-500">Bank: <strong>${bank}</strong></p>
+  <p class="text-gray-500">Banks: ${bankList || 'none'}</p>
 </div>
 <div class="overflow-x-auto">
   <table class="w-full">
@@ -56,6 +61,7 @@ export function previewContent(rows: Record<string, string | number>[], bank: st
         <th class="px-3 py-2">#</th>
         <th class="px-3 py-2">Transaction No</th>
         <th class="px-3 py-2">Date</th>
+        <th class="px-3 py-2">Bank</th>
         <th class="px-3 py-2">Sender</th>
         <th class="px-3 py-2 text-right">Amount (IDR)</th>
       </tr>

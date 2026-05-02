@@ -4,7 +4,7 @@ const REQUIRED_COLUMNS = ['Transaction No', 'Transaction Date', 'Amount', 'Bank'
 
 interface ParseResult {
   rows: Record<string, string | number>[]
-  bank: string
+  banks: Record<string, number>
   totalValid: number
   totalInvalid: number
   errors: string[]
@@ -14,17 +14,18 @@ export function parseExcel(buffer: ArrayBuffer): ParseResult {
   const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' })
   const sheetName = workbook.SheetNames[0]
   if (!sheetName) {
-    return { rows: [], bank: '', totalValid: 0, totalInvalid: 0, errors: ['No sheets found in file'] }
+    return { rows: [], banks: {}, totalValid: 0, totalInvalid: 0, errors: ['No sheets found in file'] }
   }
 
   const sheet = workbook.Sheets[sheetName]
   if (!sheet) {
-    return { rows: [], bank: '', totalValid: 0, totalInvalid: 0, errors: ['Empty sheet'] }
+    return { rows: [], banks: {}, totalValid: 0, totalInvalid: 0, errors: ['Empty sheet'] }
   }
+
   const raw: Record<string, string | number>[] = XLSX.utils.sheet_to_json(sheet, { defval: '' })
 
   if (raw.length === 0) {
-    return { rows: [], bank: '', totalValid: 0, totalInvalid: 0, errors: ['File has no data rows'] }
+    return { rows: [], banks: {}, totalValid: 0, totalInvalid: 0, errors: ['File has no data rows'] }
   }
 
   const headerKeys = Object.keys(raw[0]!)
@@ -39,14 +40,14 @@ export function parseExcel(buffer: ArrayBuffer): ParseResult {
   const missing = REQUIRED_COLUMNS.filter((col) => !headerMap.has(col))
   if (missing.length > 0) {
     return {
-      rows: [], bank: '', totalValid: 0, totalInvalid: 0,
+      rows: [], banks: {}, totalValid: 0, totalInvalid: 0,
       errors: [`Missing required columns: ${missing.join(', ')}`],
     }
   }
 
-  let bank = ''
   const validRows: Record<string, string | number>[] = []
   const errors: string[] = []
+  const bankCounts: Record<string, number> = {}
 
   for (let i = 0; i < raw.length; i++) {
     const row = raw[i]!
@@ -71,11 +72,7 @@ export function parseExcel(buffer: ArrayBuffer): ParseResult {
       continue
     }
 
-    if (!bank) bank = bankVal
-    else if (bank !== bankVal) {
-      errors.push(`Row ${i + 2}: mismatched bank "${bankVal}", expected "${bank}"`)
-      continue
-    }
+    bankCounts[bankVal] = (bankCounts[bankVal] || 0) + 1
 
     const senderAccount = String(row[headerMap.get('Sender Account No')!] ?? '').trim()
     const senderName = String(row[headerMap.get('Sender Name')!] ?? '').trim()
@@ -92,7 +89,7 @@ export function parseExcel(buffer: ArrayBuffer): ParseResult {
 
   return {
     rows: validRows,
-    bank,
+    banks: bankCounts,
     totalValid: validRows.length,
     totalInvalid: errors.length,
     errors,

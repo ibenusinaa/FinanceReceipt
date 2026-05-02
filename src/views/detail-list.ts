@@ -152,12 +152,20 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
 
   window.savePending = function() {
     if (window.__pickerStore.items.length === 0) return
+    var btn = document.getElementById('save-btn')
+    btn.disabled = true
+    btn.className = 'w-full bg-green-500 text-white font-medium py-2 rounded text-sm opacity-70 cursor-wait'
+    btn.innerHTML = '<span class="spinner mr-2 align-middle"></span>Saving...'
+
     const assignments = window.__pickerStore.items.map(function(i) { return { txId: i.txId, clientId: i.clientId } })
     fetch('/transactions/assign-batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ assignments: assignments }),
-    }).then(function() { window.location.reload() }).catch(function() { alert('Save failed') })
+    }).then(function() { window.location.reload() }).catch(function() {
+      alert('Save failed')
+      window.updateSaveButton()
+    })
   }
 
   window.updateSaveButton = function() {

@@ -7,6 +7,10 @@ export function layout(content: string): string {
   <title>Finance Receipt</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <style>
+    @keyframes spin { to { transform: rotate(360deg) } }
+    .spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
   <nav class="bg-white shadow-sm border-b">

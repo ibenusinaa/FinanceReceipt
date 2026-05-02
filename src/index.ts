@@ -3,6 +3,7 @@ import { html } from '@elysiajs/html'
 import { auth } from './middleware/auth'
 import { authRoutes } from './routes/auth'
 import { transactionRoutes } from './routes/transactions'
+import { uploadRoutes } from './routes/upload'
 
 const app = new Elysia()
   .use(html())
@@ -16,7 +17,10 @@ const app = new Elysia()
         return ''
       }
     },
-  }, (app) => app.use(transactionRoutes))
+  }, (app) => app
+    .use(transactionRoutes)
+    .use(uploadRoutes)
+  )
   .listen(3000)
 
 console.log(`Server running at http://localhost:3000`)

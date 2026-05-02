@@ -70,6 +70,8 @@ export function headerListPage(headers: HeaderRow[], filters: Record<string, str
   const statusSelected = (val: string) => filters.status === val ? 'selected' : ''
 
   return `
+  <div id="modal-container"></div>
+
   <h2 class="text-xl font-semibold text-gray-800 mb-4">Transaction List</h2>
 
   <div class="bg-white rounded-lg p-4 mb-4 shadow-sm">
@@ -111,9 +113,14 @@ export function headerListPage(headers: HeaderRow[], filters: Record<string, str
         Reset
       </button>
       <div class="ml-auto">
-        <span class="bg-gray-200 text-gray-500 px-4 py-1.5 rounded text-sm cursor-not-allowed" title="Coming soon">
+        <form hx-encoding="multipart/form-data" hx-post="/upload" hx-target="#modal-container" hx-swap="afterbegin"
+              hx-trigger="change from:#file-input" class="inline">
+          <input type="file" id="file-input" name="file" accept=".xlsx,.xls" class="hidden">
+        </form>
+        <button onclick="document.getElementById('file-input').click()"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1.5 rounded text-sm">
           Upload Excel
-        </span>
+        </button>
       </div>
     </div>
   </div>

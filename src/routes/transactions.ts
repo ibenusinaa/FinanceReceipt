@@ -76,6 +76,7 @@ export const transactionRoutes = new Elysia()
     const rows = await db
       .select({
         id: transactions.id,
+        clientId: transactions.clientId,
         transactionNo: transactions.transactionNo,
         transactionDate: transactions.transactionDate,
         senderAccountNo: transactions.senderAccountNo,

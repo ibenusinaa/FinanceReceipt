@@ -1,27 +1,40 @@
 export function modal(id: string, title: string, body: string, showSave: boolean = false): string {
   return `
-<div x-data="{ open: true }" x-show="open" x-cloak
-     class="fixed inset-0 z-50 flex items-center justify-center"
-     @keydown.escape.window="open = false; $el.remove()">
-  <div class="fixed inset-0 bg-black/50" @click="open = false; $el.remove()"></div>
+<div id="${id}" class="fixed inset-0 z-50 flex items-center justify-center" data-modal="true">
+  <div class="fixed inset-0 bg-black/50" data-modal-close="${id}"></div>
   <div class="relative bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col z-10">
     <div class="flex items-center justify-between px-6 py-4 border-b">
       <h3 class="text-lg font-semibold text-gray-800">${title}</h3>
-      <button @click="open = false; $el.parentElement.parentElement.remove()"
-              class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+      <button data-modal-close="${id}" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
     </div>
     <div class="px-6 py-4 overflow-auto flex-1">
       ${body}
     </div>
     ${showSave ? `
     <div class="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
-      <button @click="open = false; $el.parentElement.parentElement.remove()"
-              class="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded">Cancel</button>
-      <button id="${id}-save-btn"
-              class="px-4 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded">Save Batch</button>
+      <button data-modal-close="${id}" class="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded">Cancel</button>
+      <button id="${id}-save-btn" class="px-4 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded">Save Batch</button>
     </div>` : ''}
   </div>
-</div>`
+</div>
+<script>
+(function() {
+  var modalEl = document.getElementById('${id}')
+  if (!modalEl) return
+
+  function closeModal() {
+    if (modalEl) { modalEl.remove(); modalEl = null }
+  }
+
+  document.querySelectorAll('[data-modal-close="${id}"]').forEach(function(btn) {
+    btn.addEventListener('click', closeModal)
+  })
+
+  document.addEventListener('keydown', function handler(e) {
+    if (e.key === 'Escape') { closeModal(); document.removeEventListener('keydown', handler) }
+  })
+})()
+</script>`
 }
 
 export function previewContent(rows: Record<string, string | number>[], banks: Record<string, number>, totalValid: number, totalInvalid: number, errors: string[], saveId: string): string {

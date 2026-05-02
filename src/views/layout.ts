@@ -7,7 +7,6 @@ export function layout(content: string): string {
   <title>Finance Receipt</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen">
   <nav class="bg-white shadow-sm border-b">

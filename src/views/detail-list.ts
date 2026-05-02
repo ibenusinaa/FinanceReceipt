@@ -5,6 +5,7 @@ interface DetailRow {
   senderAccountNo: string
   senderName: string
   amount: string
+  clientId: number | null
   clientName: string | null
   receiptNo: string | null
   status: string
@@ -24,6 +25,10 @@ interface Pagination {
   page: number
   totalPages: number
   total: number
+}
+
+function escAttr(val: string): string {
+  return val.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 function formatDate(date: string): string {
@@ -49,14 +54,22 @@ function statusBadge(status: string): string {
   return `<span class="px-2 py-1 text-xs font-medium rounded ${colors[status] || 'bg-gray-100'}">${status}</span>`
 }
 
-function actionButton(row: DetailRow): string {
-  if (row.status === 'Unmapped') {
-    return `<button disabled class="px-3 py-1 text-xs bg-gray-200 text-gray-400 rounded cursor-not-allowed">Assign Client</button>`
+function clientCell(r: DetailRow): string {
+  if (r.status === 'Receipt Generated') {
+    return r.clientName || '<span class="text-gray-400">—</span>'
   }
-  if (row.status === 'Mapped') {
+  const oname = escAttr(r.clientName || '')
+  return `<div class="client-picker" data-tx="${r.id}" data-oid="${r.clientId ?? ''}" data-oname="${oname}"></div>`
+}
+
+function actionButton(r: DetailRow): string {
+  if (r.status === 'Mapped') {
     return `<button disabled class="px-3 py-1 text-xs bg-gray-200 text-gray-400 rounded cursor-not-allowed">Generate Receipt</button>`
   }
-  return `<button disabled class="px-3 py-1 text-xs bg-gray-200 text-gray-400 rounded cursor-not-allowed">Download PDF</button>`
+  if (r.status === 'Receipt Generated') {
+    return `<button disabled class="px-3 py-1 text-xs bg-gray-200 text-gray-400 rounded cursor-not-allowed">Download PDF</button>`
+  }
+  return ''
 }
 
 function paginationControls(pagination: Pagination, headerId: number): string {
@@ -95,7 +108,7 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
       <td class="px-3 py-2 font-mono text-xs">${r.senderAccountNo}</td>
       <td class="px-3 py-2">${r.senderName}</td>
       <td class="px-3 py-2 text-right">${formatAmount(r.amount)}</td>
-      <td class="px-3 py-2">${r.clientName || '<span class="text-gray-400">—</span>'}</td>
+      <td class="px-3 py-2">${clientCell(r)}</td>
       <td class="px-3 py-2 font-mono text-xs">${r.receiptNo || '<span class="text-gray-400">—</span>'}</td>
       <td class="px-3 py-2">${statusBadge(r.status)}</td>
       <td class="px-3 py-2">${actionButton(r)}</td>
@@ -124,7 +137,213 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
     </table>
   </div>
   ${paginationControls(pagination, headerId)}
-</div>`
+  <div class="mt-2">
+    <button id="save-btn" onclick="savePending()"
+            class="w-full bg-gray-300 text-gray-700 font-medium py-2 rounded text-sm cursor-not-allowed" disabled>
+      Save 0 Changes
+    </button>
+  </div>
+</div>
+<script>
+(function() {
+  if (!window.__pickerStore) {
+    window.__pickerStore = { items: [] }
+  }
+
+  window.savePending = function() {
+    if (window.__pickerStore.items.length === 0) return
+    const assignments = window.__pickerStore.items.map(function(i) { return { txId: i.txId, clientId: i.clientId } })
+    fetch('/transactions/assign-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assignments: assignments }),
+    }).then(function() { window.location.reload() }).catch(function() { alert('Save failed') })
+  }
+
+  window.updateSaveButton = function() {
+    var btn = document.getElementById('save-btn')
+    if (!btn) return
+    var count = window.__pickerStore.items.length
+    btn.textContent = 'Save ' + count + ' Changes'
+    if (count > 0) {
+      btn.className = 'w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 rounded text-sm'
+      btn.disabled = false
+    } else {
+      btn.className = 'w-full bg-gray-300 text-gray-700 font-medium py-2 rounded text-sm cursor-not-allowed'
+      btn.disabled = true
+    }
+  }
+
+  var dropdown = document.getElementById('table-dropdown-portal')
+  if (!dropdown) {
+    dropdown = document.createElement('div')
+    dropdown.id = 'table-dropdown-portal'
+    dropdown.style.cssText = 'position:fixed;z-index:9999;display:none;background:white;border:1px solid #ddd;border-top:none;border-radius:0 0 4px 4px;box-shadow:0 4px 6px rgba(0,0,0,0.1);max-height:12rem;overflow-y:auto'
+    document.body.appendChild(dropdown)
+  }
+
+  var activePicker = null
+  var searchTimer = null
+
+  function closeDropdown() {
+    dropdown.style.display = 'none'
+    dropdown.innerHTML = ''
+    if (activePicker) activePicker.pickerOpen = false
+    activePicker = null
+  }
+
+  document.addEventListener('mousedown', function(e) {
+    if (activePicker) {
+      var inside = activePicker.el.contains(e.target) || dropdown.contains(e.target)
+      if (!inside) closeDropdown()
+    }
+  })
+
+  window.addEventListener('scroll', function() { if (activePicker) closeDropdown() }, true)
+
+  function showDropdown(picker) {
+    if (picker.results.length === 0) { closeDropdown(); return }
+    var rect = picker.inputEl.getBoundingClientRect()
+    dropdown.style.top = rect.bottom + 'px'
+    dropdown.style.left = rect.left + 'px'
+    dropdown.style.width = rect.width + 'px'
+    dropdown.innerHTML = picker.results.map(function(c) {
+      return '<div class="pl-result px-2 py-1.5 hover:bg-blue-100 cursor-pointer text-xs border-b last:border-0" data-cid="' + c.id + '" data-cname="' + c.clientName.replace(/"/g, '&quot;') + '">' +
+        '<span class="font-medium">' + c.clientCode + '</span>' +
+        '<span class="text-gray-500 ml-1"> \u2014 ' + c.clientName + '</span></div>'
+    }).join('')
+    dropdown.querySelectorAll('.pl-result').forEach(function(el) {
+      el.addEventListener('mousedown', function(e) {
+        e.preventDefault()
+        var cid = parseInt(this.dataset.cid)
+        var cname = this.dataset.cname
+        picker.select(cid, cname)
+        closeDropdown()
+      })
+    })
+    dropdown.style.display = 'block'
+    picker.pickerOpen = true
+    activePicker = picker
+  }
+
+  function initPicker(el) {
+    var txId = parseInt(el.dataset.tx)
+    var oid = el.dataset.oid ? parseInt(el.dataset.oid) : null
+    var oname = el.dataset.oname || null
+    var selId = oid
+    var selName = oname
+    var results = []
+    var pickerOpen = false
+
+    el.innerHTML = ''
+    el.className = 'client-picker relative'
+
+    var selDiv = document.createElement('span')
+    selDiv.className = 'picker-selected flex items-center gap-1'
+    selDiv.style.cssText = selId ? '' : 'display:none'
+
+    var nameSpan = document.createElement('span')
+    nameSpan.className = 'picker-name text-xs'
+    nameSpan.textContent = selName || '\u2014'
+    nameSpan.style.cursor = 'pointer'
+    nameSpan.addEventListener('click', function() { showInput(picker) })
+
+    var clearBtn = document.createElement('button')
+    clearBtn.className = 'picker-clear text-red-400 hover:text-red-600 text-xs ml-1'
+    clearBtn.textContent = '\u00d7'
+    clearBtn.addEventListener('click', function(e) { e.stopPropagation(); clear(picker) })
+
+    var unsaved = document.createElement('span')
+    unsaved.className = 'picker-unsaved ml-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-orange-100 text-orange-700'
+    unsaved.textContent = 'Unsaved'
+    unsaved.style.display = (selId !== oid) ? '' : 'none'
+
+    selDiv.appendChild(nameSpan)
+    selDiv.appendChild(clearBtn)
+    selDiv.appendChild(unsaved)
+
+    var inputEl = document.createElement('input')
+    inputEl.type = 'text'
+    inputEl.className = 'picker-input w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400'
+    inputEl.placeholder = 'Search client...'
+    inputEl.style.cssText = selId ? 'display:none' : ''
+
+    inputEl.addEventListener('input', function() {
+      clearTimeout(searchTimer)
+      searchTimer = setTimeout(function() { search(picker) }, 300)
+    })
+    inputEl.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { closeDropdown() }
+    })
+    inputEl.addEventListener('focus', function() {
+      if (inputEl.value.length >= 2) search(picker)
+    })
+
+    el.appendChild(selDiv)
+    el.appendChild(inputEl)
+
+    var picker = {
+      el: el, txId: txId, oid: oid, oname: oname,
+      selId: selId, selName: selName, results: results,
+      inputEl: inputEl, selDiv: selDiv, nameSpan: nameSpan, unsavedEl: unsaved,
+      pickerOpen: pickerOpen,
+    }
+
+    el.__picker = picker
+
+    function showInput(p) {
+      p.selDiv.style.display = 'none'
+      p.inputEl.style.display = ''
+      p.inputEl.focus()
+    }
+
+    function hideInput(p) {
+      p.selDiv.style.display = ''
+      p.inputEl.style.display = 'none'
+    }
+
+    async function search(p) {
+      if (activePicker && activePicker !== p) closeDropdown()
+      var q = p.inputEl.value
+      if (q.length < 2) { p.results = []; closeDropdown(); return }
+      try {
+        var res = await fetch('/api/clients/search?q=' + encodeURIComponent(q))
+        p.results = await res.json()
+        showDropdown(p)
+      } catch(e) {}
+    }
+
+    function clear(p) {
+      p.selId = null
+      p.selName = null
+      showInput(p)
+      p.inputEl.value = ''
+      p.unsavedEl.style.display = 'none'
+      window.__pickerStore.items = window.__pickerStore.items.filter(function(i) { return i.txId !== p.txId })
+      window.updateSaveButton()
+    }
+
+    picker.select = function(id, name) {
+      picker.selId = id
+      picker.selName = name
+      picker.nameSpan.textContent = name
+      picker.unsavedEl.style.display = (id !== picker.oid) ? '' : 'none'
+      hideInput(picker)
+      picker.inputEl.value = ''
+      window.__pickerStore.items = window.__pickerStore.items.filter(function(i) { return i.txId !== picker.txId })
+      window.__pickerStore.items.push({ txId: picker.txId, clientId: id })
+      window.updateSaveButton()
+    }
+  }
+
+  document.querySelectorAll('.client-picker').forEach(function(el) {
+    if (!el.__picker) {
+      initPicker(el)
+    }
+  })
+})()
+</script>
+<div id="table-dropdown-portal"></div>`
 }
 
 export function detailListPage(header: DetailHeader, rows: DetailRow[], pagination: Pagination): string {

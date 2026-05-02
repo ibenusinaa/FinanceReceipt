@@ -8,6 +8,12 @@ interface HeaderRow {
   status: string
 }
 
+interface Pagination {
+  page: number
+  totalPages: number
+  total: number
+}
+
 function formatDate(date: string): string {
   const d = new Date(date)
   return d.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -21,7 +27,26 @@ function statusBadge(status: string): string {
   return `<span class="px-2 py-1 text-xs font-medium rounded ${colors[status] || 'bg-gray-100 text-gray-800'}">${status}</span>`
 }
 
-function renderTable(headers: HeaderRow[], hasRows: boolean): string {
+function paginationControls(p: Pagination): string {
+  const prevDisabled = p.page <= 1
+  const nextDisabled = p.page >= p.totalPages
+  const filterParams = `hx-include="[name='dateFrom'],[name='dateTo'],[name='bank'],[name='status']"`
+
+  return `
+<div class="flex items-center justify-between mt-3 text-sm text-gray-500">
+  <button ${prevDisabled ? 'disabled' : ''}
+    hx-get="/?page=${p.page - 1}" hx-target="#table-container" hx-swap="innerHTML"
+    ${filterParams}
+    class="px-3 py-1 border rounded ${prevDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-gray-700'}">Previous</button>
+  <span>Page ${p.page} of ${p.totalPages} (${p.total} batches)</span>
+  <button ${nextDisabled ? 'disabled' : ''}
+    hx-get="/?page=${p.page + 1}" hx-target="#table-container" hx-swap="innerHTML"
+    ${filterParams}
+    class="px-3 py-1 border rounded ${nextDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-gray-700'}">Next</button>
+</div>`
+}
+
+function renderTable(headers: HeaderRow[], hasRows: boolean, pagination?: Pagination): string {
   if (!hasRows) {
     return `
     <div class="text-center py-16 text-gray-500">
@@ -62,10 +87,55 @@ function renderTable(headers: HeaderRow[], hasRows: boolean): string {
         ${rows}
       </tbody>
     </table>
-  </div>`
+  </div>
+  ${pagination ? paginationControls(pagination) : ''}`
 }
 
-export function headerListPage(headers: HeaderRow[], filters: Record<string, string> = {}): string {
+export function renderTableBody(headers: HeaderRow[], pagination?: Pagination): string {
+  if (headers.length === 0) {
+    return `<div class="text-center py-16 text-gray-500">
+      <p class="text-lg mb-2">No transactions found</p>
+      <p class="text-sm">Try adjusting your filters.</p>
+    </div>`
+  }
+
+  const rows = headers.map((h) => `
+    <tr class="border-b hover:bg-gray-50">
+      <td class="px-4 py-3 text-sm text-gray-600">${formatDate(h.uploadDate)}</td>
+      <td class="px-4 py-3 text-sm font-medium">${h.bank}</td>
+      <td class="px-4 py-3 text-sm text-center">${h.totalTransactions}</td>
+      <td class="px-4 py-3 text-sm text-center text-blue-600">${h.mappedCount}</td>
+      <td class="px-4 py-3 text-sm text-center text-orange-600">${h.unmappedCount}</td>
+      <td class="px-4 py-3 text-sm">${statusBadge(h.status)}</td>
+      <td class="px-4 py-3 text-sm">
+        <a href="/transactions/${h.id}" class="text-blue-600 hover:text-blue-800">View Detail</a>
+      </td>
+    </tr>`
+  ).join('')
+
+  return `
+  <div class="overflow-x-auto">
+    <table class="w-full bg-white rounded-lg">
+      <thead>
+        <tr class="bg-gray-50 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <th class="px-4 py-3">Upload Date</th>
+          <th class="px-4 py-3">Bank</th>
+          <th class="px-4 py-3 text-center">Total</th>
+          <th class="px-4 py-3 text-center">Mapped</th>
+          <th class="px-4 py-3 text-center">Unmapped</th>
+          <th class="px-4 py-3">Status</th>
+          <th class="px-4 py-3">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        ${rows}
+      </tbody>
+    </table>
+  </div>
+  ${pagination ? paginationControls(pagination) : ''}`
+}
+
+export function headerListPage(headers: HeaderRow[], filters: Record<string, string> = {}, pagination?: Pagination): string {
   const bankSelected = (val: string) => filters.bank === val ? 'selected' : ''
   const statusSelected = (val: string) => filters.status === val ? 'selected' : ''
 
@@ -127,57 +197,6 @@ export function headerListPage(headers: HeaderRow[], filters: Record<string, str
   </div>
 
   <div id="table-container">
-    ${renderTable(headers, headers.length > 0)}
-  </div>
-
-  <div class="flex items-center justify-between mt-4 text-sm text-gray-500">
-    <span>Page 1 of 1</span>
-    <div class="flex gap-2">
-      <button disabled class="px-3 py-1 border rounded bg-gray-100 text-gray-400 cursor-not-allowed">Previous</button>
-      <button disabled class="px-3 py-1 border rounded bg-gray-100 text-gray-400 cursor-not-allowed">Next</button>
-    </div>
-  </div>`
-}
-
-export function renderTableBody(headers: HeaderRow[]): string {
-  if (headers.length === 0) {
-    return `<div class="text-center py-16 text-gray-500">
-      <p class="text-lg mb-2">No transactions found</p>
-      <p class="text-sm">Try adjusting your filters.</p>
-    </div>`
-  }
-
-  const rows = headers.map((h) => `
-    <tr class="border-b hover:bg-gray-50">
-      <td class="px-4 py-3 text-sm text-gray-600">${formatDate(h.uploadDate)}</td>
-      <td class="px-4 py-3 text-sm font-medium">${h.bank}</td>
-      <td class="px-4 py-3 text-sm text-center">${h.totalTransactions}</td>
-      <td class="px-4 py-3 text-sm text-center text-blue-600">${h.mappedCount}</td>
-      <td class="px-4 py-3 text-sm text-center text-orange-600">${h.unmappedCount}</td>
-      <td class="px-4 py-3 text-sm">${statusBadge(h.status)}</td>
-      <td class="px-4 py-3 text-sm">
-        <a href="/transactions/${h.id}" class="text-blue-600 hover:text-blue-800">View Detail</a>
-      </td>
-    </tr>`
-  ).join('')
-
-  return `
-  <div class="overflow-x-auto">
-    <table class="w-full bg-white rounded-lg">
-      <thead>
-        <tr class="bg-gray-50 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-          <th class="px-4 py-3">Upload Date</th>
-          <th class="px-4 py-3">Bank</th>
-          <th class="px-4 py-3 text-center">Total</th>
-          <th class="px-4 py-3 text-center">Mapped</th>
-          <th class="px-4 py-3 text-center">Unmapped</th>
-          <th class="px-4 py-3">Status</th>
-          <th class="px-4 py-3">Actions</th>
-        </tr>
-      </thead>
-      <tbody id="table-body">
-        ${rows}
-      </tbody>
-    </table>
+    ${renderTable(headers, headers.length > 0, pagination)}
   </div>`
 }

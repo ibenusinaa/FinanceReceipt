@@ -9,6 +9,7 @@ import { detailListPage, detailTableContainer } from '../views/detail-list'
 type Bank = 'BCA' | 'MUFG' | 'HSBC'
 type HeaderStatus = 'Draft' | 'Receipt Generated'
 
+const HEADER_PAGE_SIZE = 10
 const PAGE_SIZE = 25
 
 export const transactionRoutes = new Elysia()
@@ -26,11 +27,23 @@ export const transactionRoutes = new Elysia()
     if (dateFrom) conditions.push(gte(transactionHeaders.uploadDate, dateFrom))
     if (dateTo) conditions.push(lte(transactionHeaders.uploadDate, dateTo))
 
+    const [countResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(transactionHeaders)
+      .where(and(...conditions))
+
+    const total = countResult?.count ?? 0
+    const totalPages = Math.ceil(total / HEADER_PAGE_SIZE)
+    const page = Math.max(1, Math.min(parseInt(query.page || '1', 10) || 1, totalPages || 1))
+    const offset = (page - 1) * HEADER_PAGE_SIZE
+
     const headers = await db
       .select()
       .from(transactionHeaders)
       .where(and(...conditions))
       .orderBy(desc(transactionHeaders.uploadDate))
+      .limit(HEADER_PAGE_SIZE)
+      .offset(offset)
 
     const mapped = headers.map((h) => ({
       ...h,
@@ -40,7 +53,7 @@ export const transactionRoutes = new Elysia()
     const isHtmx = request.headers.get('HX-Request') === 'true'
 
     if (isHtmx) {
-      return renderTableBody(mapped)
+      return renderTableBody(mapped, { page, totalPages, total })
     }
 
     const filters: Record<string, string> = {}
@@ -49,7 +62,7 @@ export const transactionRoutes = new Elysia()
     if (query.dateFrom) filters.dateFrom = query.dateFrom
     if (query.dateTo) filters.dateTo = query.dateTo
 
-    return layout(headerListPage(mapped, filters))
+    return layout(headerListPage(mapped, filters, { page, totalPages, total }))
   })
   .get('/transactions/:headerId', async ({ params, query, request }) => {
     const headerId = parseInt(params.headerId, 10)

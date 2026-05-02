@@ -5,6 +5,7 @@ import { authRoutes } from './routes/auth'
 import { transactionRoutes } from './routes/transactions'
 import { uploadRoutes } from './routes/upload'
 import { mappingRoutes } from './routes/mapping'
+import { receiptRoutes } from './routes/receipt'
 
 const app = new Elysia()
   .use(html())
@@ -22,6 +23,7 @@ const app = new Elysia()
     .use(transactionRoutes)
     .use(uploadRoutes)
     .use(mappingRoutes)
+    .use(receiptRoutes)
   )
   .listen(3000)
 

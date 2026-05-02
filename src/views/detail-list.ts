@@ -64,10 +64,12 @@ function clientCell(r: DetailRow): string {
 
 function actionButton(r: DetailRow): string {
   if (r.status === 'Mapped') {
-    return `<button disabled class="px-3 py-1 text-xs bg-gray-200 text-gray-400 rounded cursor-not-allowed">Generate Receipt</button>`
+    return `<button onclick="generateReceipt(${r.id})" id="gen-receipt-${r.id}"
+            class="px-3 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded">Generate Receipt</button>`
   }
   if (r.status === 'Receipt Generated') {
-    return `<button disabled class="px-3 py-1 text-xs bg-gray-200 text-gray-400 rounded cursor-not-allowed">Download PDF</button>`
+    return `<button onclick="downloadReceipt(${r.id})" id="dl-pdf-${r.id}"
+            class="px-3 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded">Download PDF</button>`
   }
   return ''
 }
@@ -180,6 +182,65 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
       btn.className = 'w-full bg-gray-300 text-gray-700 font-medium py-2 rounded text-sm cursor-not-allowed'
       btn.disabled = true
     }
+  }
+
+  window.generateReceipt = function(txId) {
+    var btn = document.getElementById('gen-receipt-' + txId)
+    if (!btn) return
+    btn.disabled = true
+    btn.className = 'px-3 py-1 text-xs bg-green-400 text-white rounded cursor-wait'
+    btn.innerHTML = '<span class="spinner mr-1 align-middle"></span>'
+
+    fetch('/receipts/' + txId + '/generate', { method: 'POST' })
+      .then(function(r) { if (!r.ok) throw new Error(); return r.blob() })
+      .then(function(blob) {
+        var url = URL.createObjectURL(blob)
+        var a = document.createElement('a')
+        a.href = url
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        window.location.reload()
+      })
+      .catch(function() {
+        alert('Failed to generate receipt')
+        if (btn) {
+          btn.disabled = false
+          btn.className = 'px-3 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded'
+          btn.textContent = 'Generate Receipt'
+        }
+      })
+  }
+
+  window.downloadReceipt = function(txId) {
+    var btn = document.getElementById('dl-pdf-' + txId)
+    if (!btn) return
+    btn.disabled = true
+    btn.className = 'px-3 py-1 text-xs bg-blue-400 text-white rounded cursor-wait'
+    btn.innerHTML = '<span class="spinner mr-1 align-middle"></span>'
+
+    fetch('/receipts/' + txId + '/pdf')
+      .then(function(r) { if (!r.ok) throw new Error(); return r.blob() })
+      .then(function(blob) {
+        var url = URL.createObjectURL(blob)
+        var a = document.createElement('a')
+        a.href = url
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      })
+      .catch(function() {
+        alert('Failed to download PDF')
+      })
+      .finally(function() {
+        if (btn) {
+          btn.disabled = false
+          btn.className = 'px-3 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded'
+          btn.textContent = 'Download PDF'
+        }
+      })
   }
 
   var dropdown = document.getElementById('table-dropdown-portal')

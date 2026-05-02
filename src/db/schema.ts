@@ -1,5 +1,9 @@
-import { mysqlTable, mysqlEnum, varchar, int, decimal, date, datetime, uniqueIndex } from 'drizzle-orm/mysql-core'
+import { mysqlTable, mysqlEnum, varchar, int, decimal, date, datetime, uniqueIndex, customType } from 'drizzle-orm/mysql-core'
 import { relations } from 'drizzle-orm'
+
+const longblob = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() { return 'longblob' },
+})
 
 export const users = mysqlTable('users', {
   id: varchar('id', { length: 21 }).primaryKey(),
@@ -59,6 +63,13 @@ export const receiptSequences = mysqlTable('receipt_sequences', {
   bankDateUnique: uniqueIndex('bank_date_unique').on(table.bank, table.date),
 }))
 
+export const receiptFiles = mysqlTable('receipt_files', {
+  id: int('id').primaryKey().autoincrement(),
+  transactionId: int('transaction_id').notNull().unique().references(() => transactions.id),
+  pdfBlob: longblob('pdf_blob').notNull(),
+  createdAt: datetime('created_at').notNull().$defaultFn(() => new Date()),
+})
+
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }))
@@ -70,4 +81,5 @@ export const transactionHeadersRelations = relations(transactionHeaders, ({ many
 export const transactionsRelations = relations(transactions, ({ one }) => ({
   header: one(transactionHeaders, { fields: [transactions.headerId], references: [transactionHeaders.id] }),
   client: one(clients, { fields: [transactions.clientId], references: [clients.id] }),
+  receiptFile: one(receiptFiles, { fields: [transactions.id], references: [receiptFiles.transactionId] }),
 }))

@@ -2,6 +2,7 @@ import { Elysia, t } from 'elysia'
 import { db } from '../db/index'
 import { transactionHeaders, transactions } from '../db/schema'
 import { parseExcel } from '../services/excel'
+import { autoMapTransactions } from '../services/mapping'
 import { modal, previewContent } from '../views/components/modal'
 
 const previewStore = new Map<string, { rows: Record<string, string | number>[] }>()
@@ -28,6 +29,11 @@ export const uploadRoutes = new Elysia()
 ${modal('upload-preview', 'Preview Upload', content, true)}
 <script>
   document.getElementById('upload-preview-save-btn').addEventListener('click', () => {
+    var btn = document.getElementById('upload-preview-save-btn')
+    btn.disabled = true
+    btn.innerHTML = '<span class="spinner mr-2 align-middle"></span>Saving...'
+    btn.className = 'px-4 py-2 text-sm bg-blue-400 text-white rounded cursor-wait'
+
     const id = document.getElementById('save-id').value
     fetch('/upload/save', {
       method: 'POST',
@@ -35,6 +41,11 @@ ${modal('upload-preview', 'Preview Upload', content, true)}
       body: JSON.stringify({ saveId: id }),
     }).then(() => {
       window.location.href = '/'
+    }).catch(() => {
+      alert('Save failed')
+      btn.disabled = false
+      btn.textContent = 'Save Batch'
+      btn.className = 'px-4 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded'
     })
   })
 </script>`
@@ -85,6 +96,7 @@ ${modal('upload-preview', 'Preview Upload', content, true)}
             }
           })
           await tx.insert(transactions).values(txRows as any)
+          await autoMapTransactions(tx as any, header.id)
         }
       })
 

@@ -28,7 +28,7 @@ export const uploadRoutes = new Elysia()
 ${modal('upload-preview', 'Preview Upload', content, true)}
 <script>
   document.getElementById('upload-preview-save-btn').addEventListener('click', () => {
-    const id = document.getElementById('save-id')!.value
+    const id = document.getElementById('save-id').value
     fetch('/upload/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -74,11 +74,10 @@ ${modal('upload-preview', 'Preview Upload', content, true)}
           if (!header) throw new Error('Failed to create header')
 
           const txRows = bankRows.map((r) => {
-            const dateStr = String(r.transactionDate).replace(/[^0-9\-]/g, '')
             return {
               headerId: header.id,
               transactionNo: String(r.transactionNo),
-              transactionDate: dateStr,
+              transactionDate: String(r.transactionDate),
               amount: String(r.amount),
               senderAccountNo: String(r.senderAccountNo),
               senderName: String(r.senderName),

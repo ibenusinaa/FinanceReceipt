@@ -11,7 +11,7 @@ interface ParseResult {
 }
 
 export function parseExcel(buffer: ArrayBuffer): ParseResult {
-  const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' })
+  const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array', cellDates: true })
   const sheetName = workbook.SheetNames[0]
   if (!sheetName) {
     return { rows: [], banks: {}, totalValid: 0, totalInvalid: 0, errors: ['No sheets found in file'] }
@@ -52,10 +52,13 @@ export function parseExcel(buffer: ArrayBuffer): ParseResult {
   for (let i = 0; i < raw.length; i++) {
     const row = raw[i]!
     const txNo = String(row[headerMap.get('Transaction No')!] ?? '').trim()
-    const dateVal = String(row[headerMap.get('Transaction Date')!] ?? '').trim()
     const amountVal = row[headerMap.get('Amount')!]
+    const dateVal: unknown = row[headerMap.get('Transaction Date')!]
+    const dateStr = dateVal instanceof Date
+      ? dateVal.toISOString().slice(0, 10)
+      : String(dateVal ?? '').trim()
 
-    if (!txNo || !dateVal || amountVal === '' || amountVal === undefined || amountVal === null) {
+    if (!txNo || !dateStr || amountVal === '' || amountVal === undefined || amountVal === null) {
       errors.push(`Row ${i + 2}: missing required field`)
       continue
     }
@@ -79,7 +82,7 @@ export function parseExcel(buffer: ArrayBuffer): ParseResult {
 
     validRows.push({
       transactionNo: txNo,
-      transactionDate: dateVal,
+      transactionDate: dateStr,
       amount,
       bank: bankVal,
       senderAccountNo: senderAccount,

@@ -10,7 +10,7 @@ interface HeaderRow {
 
 function formatDate(date: string): string {
   const d = new Date(date)
-  return d.toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
 function statusBadge(status: string): string {

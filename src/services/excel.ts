@@ -2,6 +2,14 @@ import * as XLSX from 'xlsx'
 
 const REQUIRED_COLUMNS = ['Transaction No', 'Transaction Date', 'Amount', 'Bank', 'Sender Account No', 'Sender Name']
 
+function normalizeDate(val: string): string {
+  const dmy = val.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/)
+  if (dmy) return `${dmy[3]}-${dmy[2]!.padStart(2, '0')}-${dmy[1]!.padStart(2, '0')}`
+  const iso = val.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/)
+  if (iso) return `${iso[1]}-${iso[2]!.padStart(2, '0')}-${iso[3]!.padStart(2, '0')}`
+  return val
+}
+
 interface ParseResult {
   rows: Record<string, string | number>[]
   banks: Record<string, number>
@@ -56,7 +64,7 @@ export function parseExcel(buffer: ArrayBuffer): ParseResult {
     const dateVal: unknown = row[headerMap.get('Transaction Date')!]
     const dateStr = dateVal instanceof Date
       ? dateVal.toISOString().slice(0, 10)
-      : String(dateVal ?? '').trim()
+      : normalizeDate(String(dateVal ?? '').trim())
 
     if (!txNo || !dateStr || amountVal === '' || amountVal === undefined || amountVal === null) {
       errors.push(`Row ${i + 2}: missing required field`)

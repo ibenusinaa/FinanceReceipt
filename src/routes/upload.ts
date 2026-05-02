@@ -107,7 +107,7 @@ ${modal('upload-preview', 'Preview Upload', content, true)}
     } catch (e) {
       console.error('Save failed:', e)
       set.status = 500
-      return { error: 'Failed to save batch' }
+      return { error: 'Failed to save batch: ' + (e as Error).message }
     }
   }, {
     body: t.Object({

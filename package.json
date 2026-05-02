@@ -1,0 +1,30 @@
+{
+  "name": "finance-receipt",
+  "module": "src/index.ts",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "seed": "bun run src/seed.ts"
+  },
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "^1.3.13",
+    "drizzle-kit": "^0.31.10"
+  },
+  "peerDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@elysiajs/html": "^1.4.2",
+    "@lucia-auth/adapter-drizzle": "^1.1.0",
+    "drizzle-orm": "^0.45.2",
+    "elysia": "^1.4.28",
+    "lucia": "^3.2.2",
+    "mysql2": "^3.22.3",
+    "pdfkit": "^0.18.0",
+    "xlsx": "^0.18.5"
+  }
+}

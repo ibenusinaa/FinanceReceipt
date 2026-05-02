@@ -4,6 +4,7 @@ import { auth } from './middleware/auth'
 import { authRoutes } from './routes/auth'
 import { transactionRoutes } from './routes/transactions'
 import { uploadRoutes } from './routes/upload'
+import { mappingRoutes } from './routes/mapping'
 
 const app = new Elysia()
   .use(html())
@@ -20,6 +21,7 @@ const app = new Elysia()
   }, (app) => app
     .use(transactionRoutes)
     .use(uploadRoutes)
+    .use(mappingRoutes)
   )
   .listen(3000)
 

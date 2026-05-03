@@ -261,14 +261,18 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
     activePicker = null
   }
 
-  document.addEventListener('mousedown', function(e) {
-    if (activePicker) {
-      var inside = activePicker.el.contains(e.target) || dropdown.contains(e.target)
-      if (!inside) closeDropdown()
-    }
-  })
+  if (!window.__pickerReady) {
+    window.__pickerReady = true
 
-  window.addEventListener('scroll', function() { if (activePicker) closeDropdown() }, true)
+    document.addEventListener('mousedown', function(e) {
+      if (activePicker) {
+        var inside = activePicker.el.contains(e.target) || dropdown.contains(e.target)
+        if (!inside) closeDropdown()
+      }
+    })
+
+    window.addEventListener('scroll', function() { if (activePicker) closeDropdown() }, true)
+  }
 
   function showDropdown(picker) {
     if (picker.results.length === 0) { closeDropdown(); return }
@@ -411,8 +415,7 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
     }
   })
 })()
-</script>
-<div id="table-dropdown-portal"></div>`
+</script>`
 }
 
 export function detailListPage(header: DetailHeader, rows: DetailRow[], pagination: Pagination): string {

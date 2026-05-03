@@ -48,8 +48,8 @@ function formatAmount(amount: string): string {
 function statusBadge(status: string): string {
   const colors: Record<string, string> = {
     Unmapped: 'bg-yellow-100 text-yellow-800',
-    Mapped: 'bg-blue-100 text-blue-800',
-    'Receipt Generated': 'bg-green-100 text-green-800',
+    Mapped: 'bg-primary-100 text-primary-800',
+    'Receipt Generated': 'bg-emerald-100 text-emerald-800',
   }
   return `<span class="px-2 py-1 text-xs font-medium rounded ${colors[status] || 'bg-gray-100'}">${status}</span>`
 }
@@ -65,11 +65,11 @@ function clientCell(r: DetailRow): string {
 function actionButton(r: DetailRow): string {
   if (r.status === 'Mapped') {
     return `<button onclick="generateReceipt(${r.id})" id="gen-receipt-${r.id}"
-            class="px-3 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded">Generate Receipt</button>`
+            class="px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded">Generate Receipt</button>`
   }
   if (r.status === 'Receipt Generated') {
     return `<button onclick="downloadReceipt(${r.id})" id="dl-pdf-${r.id}"
-            class="px-3 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded">Download PDF</button>`
+            class="px-3 py-1 text-xs bg-primary-500 hover:bg-primary-600 text-white rounded">Download PDF</button>`
   }
   return ''
 }
@@ -156,7 +156,7 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
     if (window.__pickerStore.items.length === 0) return
     var btn = document.getElementById('save-btn')
     btn.disabled = true
-    btn.className = 'w-full bg-green-500 text-white font-medium py-2 rounded text-sm opacity-70 cursor-wait'
+    btn.className = 'w-full bg-emerald-600 text-white font-medium py-2 rounded text-sm opacity-70 cursor-wait'
     btn.innerHTML = '<span class="spinner mr-2 align-middle"></span>Saving...'
 
     const assignments = window.__pickerStore.items.map(function(i) { return { txId: i.txId, clientId: i.clientId } })
@@ -176,7 +176,7 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
     var count = window.__pickerStore.items.length
     btn.textContent = 'Save ' + count + ' Changes'
     if (count > 0) {
-      btn.className = 'w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 rounded text-sm'
+      btn.className = 'w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 rounded text-sm'
       btn.disabled = false
     } else {
       btn.className = 'w-full bg-gray-300 text-gray-700 font-medium py-2 rounded text-sm cursor-not-allowed'
@@ -188,7 +188,7 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
     var btn = document.getElementById('gen-receipt-' + txId)
     if (!btn) return
     btn.disabled = true
-    btn.className = 'px-3 py-1 text-xs bg-green-400 text-white rounded cursor-wait'
+    btn.className = 'px-3 py-1 text-xs bg-emerald-400 text-white rounded cursor-wait'
     btn.innerHTML = '<span class="spinner mr-1 align-middle"></span>'
 
     fetch('/receipts/' + txId + '/generate', { method: 'POST' })
@@ -207,7 +207,7 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
         alert('Failed to generate receipt')
         if (btn) {
           btn.disabled = false
-          btn.className = 'px-3 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded'
+          btn.className = 'px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded'
           btn.textContent = 'Generate Receipt'
         }
       })
@@ -217,7 +217,7 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
     var btn = document.getElementById('dl-pdf-' + txId)
     if (!btn) return
     btn.disabled = true
-    btn.className = 'px-3 py-1 text-xs bg-blue-400 text-white rounded cursor-wait'
+    btn.className = 'px-3 py-1 text-xs bg-primary-400 text-white rounded cursor-wait'
     btn.innerHTML = '<span class="spinner mr-1 align-middle"></span>'
 
     fetch('/receipts/' + txId + '/pdf')
@@ -237,7 +237,7 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
       .finally(function() {
         if (btn) {
           btn.disabled = false
-          btn.className = 'px-3 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded'
+          btn.className = 'px-3 py-1 text-xs bg-primary-500 hover:bg-primary-600 text-white rounded'
           btn.textContent = 'Download PDF'
         }
       })
@@ -277,7 +277,7 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
     dropdown.style.left = rect.left + 'px'
     dropdown.style.width = rect.width + 'px'
     dropdown.innerHTML = picker.results.map(function(c) {
-      return '<div class="pl-result px-2 py-1.5 hover:bg-blue-100 cursor-pointer text-xs border-b last:border-0" data-cid="' + c.id + '" data-cname="' + c.clientName.replace(/"/g, '&quot;') + '">' +
+      return '<div class="pl-result px-2 py-1.5 hover:bg-primary-100 cursor-pointer text-xs border-b last:border-0" data-cid="' + c.id + '" data-cname="' + c.clientName.replace(/"/g, '&quot;') + '">' +
         '<span class="font-medium">' + c.clientCode + '</span>' +
         '<span class="text-gray-500 ml-1"> \u2014 ' + c.clientName + '</span></div>'
     }).join('')
@@ -333,7 +333,7 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
 
     var inputEl = document.createElement('input')
     inputEl.type = 'text'
-    inputEl.className = 'picker-input w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400'
+    inputEl.className = 'picker-input w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary-400'
     inputEl.placeholder = 'Search client...'
     inputEl.style.cssText = selId ? 'display:none' : ''
 
@@ -418,7 +418,7 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
 export function detailListPage(header: DetailHeader, rows: DetailRow[], pagination: Pagination): string {
   return `
 <div class="mb-4">
-  <a href="/" class="text-blue-600 hover:text-blue-800 text-sm">&larr; Back to Transaction List</a>
+  <a href="/" class="text-primary-500 hover:text-primary-800 text-sm">&larr; Back to Transaction List</a>
 </div>
 
 <div class="bg-white rounded-lg p-4 mb-4 shadow-sm">
@@ -427,7 +427,7 @@ export function detailListPage(header: DetailHeader, rows: DetailRow[], paginati
     <div><span class="text-gray-500">Upload:</span> <span class="font-medium">${formatDate(header.uploadDate)}</span></div>
     <div><span class="text-gray-500">Total:</span> <span class="font-medium">${header.totalTransactions}</span></div>
     <div>
-      <span class="text-blue-600 font-medium">${header.mappedCount} Mapped</span>
+      <span class="text-primary-500 font-medium">${header.mappedCount} Mapped</span>
       <span class="text-gray-400 mx-1">/</span>
       <span class="text-orange-600 font-medium">${header.unmappedCount} Unmapped</span>
     </div>

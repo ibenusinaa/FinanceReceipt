@@ -22,7 +22,7 @@ function formatDate(date: string): string {
 function statusBadge(status: string): string {
   const colors: Record<string, string> = {
     Draft: 'bg-yellow-100 text-yellow-800',
-    'Receipt Generated': 'bg-green-100 text-green-800',
+    'Receipt Generated': 'bg-emerald-100 text-emerald-800',
   }
   return `<span class="px-2 py-1 text-xs font-medium rounded ${colors[status] || 'bg-gray-100 text-gray-800'}">${status}</span>`
 }
@@ -60,11 +60,11 @@ function renderTable(headers: HeaderRow[], hasRows: boolean, pagination?: Pagina
       <td class="px-4 py-3 text-sm text-gray-600">${formatDate(h.uploadDate)}</td>
       <td class="px-4 py-3 text-sm font-medium">${h.bank}</td>
       <td class="px-4 py-3 text-sm text-center">${h.totalTransactions}</td>
-      <td class="px-4 py-3 text-sm text-center text-blue-600">${h.mappedCount}</td>
+      <td class="px-4 py-3 text-sm text-center text-primary-500">${h.mappedCount}</td>
       <td class="px-4 py-3 text-sm text-center text-orange-600">${h.unmappedCount}</td>
       <td class="px-4 py-3 text-sm">${statusBadge(h.status)}</td>
       <td class="px-4 py-3 text-sm">
-        <a href="/transactions/${h.id}" class="text-blue-600 hover:text-blue-800">View Detail</a>
+        <a href="/transactions/${h.id}" class="text-primary-500 hover:text-primary-800">View Detail</a>
       </td>
     </tr>`
   ).join('')
@@ -104,11 +104,11 @@ export function renderTableBody(headers: HeaderRow[], pagination?: Pagination): 
       <td class="px-4 py-3 text-sm text-gray-600">${formatDate(h.uploadDate)}</td>
       <td class="px-4 py-3 text-sm font-medium">${h.bank}</td>
       <td class="px-4 py-3 text-sm text-center">${h.totalTransactions}</td>
-      <td class="px-4 py-3 text-sm text-center text-blue-600">${h.mappedCount}</td>
+      <td class="px-4 py-3 text-sm text-center text-primary-500">${h.mappedCount}</td>
       <td class="px-4 py-3 text-sm text-center text-orange-600">${h.unmappedCount}</td>
       <td class="px-4 py-3 text-sm">${statusBadge(h.status)}</td>
       <td class="px-4 py-3 text-sm">
-        <a href="/transactions/${h.id}" class="text-blue-600 hover:text-blue-800">View Detail</a>
+        <a href="/transactions/${h.id}" class="text-primary-500 hover:text-primary-800">View Detail</a>
       </td>
     </tr>`
   ).join('')
@@ -175,7 +175,7 @@ export function headerListPage(headers: HeaderRow[], filters: Record<string, str
       </div>
       <button hx-get="/" hx-target="#table-container" hx-swap="innerHTML"
               hx-include="[name='dateFrom'],[name='dateTo'],[name='bank'],[name='status']"
-              class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1.5 rounded text-sm">
+              class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-1.5 rounded text-sm">
         Apply
       </button>
       <button onclick="document.querySelector('[name=dateFrom]').value='';document.querySelector('[name=dateTo]').value='';document.querySelector('[name=bank]').value='';document.querySelector('[name=status]').value='';htmx.trigger('button[hx-get]', 'click')"
@@ -189,7 +189,7 @@ export function headerListPage(headers: HeaderRow[], filters: Record<string, str
                  onchange="setTimeout(() => this.value = '', 300)">
         </form>
         <button onclick="document.getElementById('file-input').click()"
-                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1.5 rounded text-sm">
+                class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-1.5 rounded text-sm">
           Upload Excel
         </button>
       </div>

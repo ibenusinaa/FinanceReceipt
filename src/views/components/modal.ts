@@ -13,7 +13,7 @@ export function modal(id: string, title: string, body: string, showSave: boolean
     ${showSave ? `
     <div class="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
       <button data-modal-close="${id}" class="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded">Cancel</button>
-      <button id="${id}-save-btn" class="px-4 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded">Save Batch</button>
+      <button id="${id}-save-btn" class="px-4 py-2 text-sm bg-primary-500 hover:bg-primary-600 text-white rounded">Save Batch</button>
     </div>` : ''}
   </div>
 </div>
@@ -64,7 +64,7 @@ export function previewContent(rows: Record<string, string | number>[], banks: R
 
   return `
 <div class="text-sm mb-4">
-  <p class="mb-1"><span class="text-green-600 font-medium">${totalValid} rows imported</span>${totalInvalid > 0 ? ` · <span class="text-red-600 font-medium">${totalInvalid} rows skipped</span>` : ''}</p>
+  <p class="mb-1"><span class="text-emerald-600 font-medium">${totalValid} rows imported</span>${totalInvalid > 0 ? ` · <span class="text-red-600 font-medium">${totalInvalid} rows skipped</span>` : ''}</p>
   <p class="text-gray-500">Banks: ${bankList || 'none'}</p>
 </div>
 <div class="overflow-x-auto">

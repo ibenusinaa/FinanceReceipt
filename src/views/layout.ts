@@ -7,6 +7,24 @@ export function layout(content: string): string {
   <title>Finance Receipt</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              100: '#cceff4',
+              400: '#2db6c9',
+              500: '#0096a9',
+              600: '#008090',
+              700: '#006b78',
+              800: '#005661',
+            }
+          }
+        }
+      }
+    }
+  </script>
   <style>
     @keyframes spin { to { transform: rotate(360deg) } }
     .spinner { display: inline-block; width: 0.75rem; height: 0.75rem; border: 2px solid currentColor; border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; }

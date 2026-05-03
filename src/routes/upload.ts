@@ -32,7 +32,7 @@ ${modal('upload-preview', 'Preview Upload', content, true)}
     var btn = document.getElementById('upload-preview-save-btn')
     btn.disabled = true
     btn.innerHTML = '<span class="spinner mr-2 align-middle"></span>Saving...'
-    btn.className = 'px-4 py-2 text-sm bg-blue-400 text-white rounded cursor-wait'
+    btn.className = 'px-4 py-2 text-sm bg-primary-400 text-white rounded cursor-wait'
 
     const id = document.getElementById('save-id').value
     fetch('/upload/save', {
@@ -45,7 +45,7 @@ ${modal('upload-preview', 'Preview Upload', content, true)}
       alert('Save failed')
       btn.disabled = false
       btn.textContent = 'Save Batch'
-      btn.className = 'px-4 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded'
+      btn.className = 'px-4 py-2 text-sm bg-primary-500 hover:bg-primary-600 text-white rounded'
     })
   })
 </script>`

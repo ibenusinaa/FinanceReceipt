@@ -25,12 +25,15 @@ export const mappingRoutes = new Elysia()
       )
       .limit(20)
   })
-  .post('/transactions/assign-batch', async ({ body, set }) => {
+  .post('/transactions/assign-batch', async ({ body, set, ...ctx }) => {
+    const user = (ctx as any).user
     const assignments = body.assignments
     if (!assignments || assignments.length === 0) {
       set.status = 400
       return { error: 'No assignments provided' }
     }
+
+    const now = new Date()
 
     await db.transaction(async (tx) => {
       const headerIds = new Set<number>()
@@ -49,6 +52,8 @@ export const mappingRoutes = new Elysia()
           .set({
             clientId,
             status: txr.status === 'Unmapped' ? 'Mapped' as const : txr.status,
+            assignedBy: user.username,
+            assignedAt: now,
           })
           .where(eq(transactions.id, txId))
 

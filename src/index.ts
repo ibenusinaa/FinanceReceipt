@@ -25,6 +25,17 @@ const app = new Elysia()
     .use(mappingRoutes)
     .use(receiptRoutes)
   )
+  .onError(({ code, error, set, request }) => {
+    console.error(`[${code}]`, error instanceof Error ? error.message : error)
+    const isHtmx = request.headers.get('HX-Request') === 'true'
+    const message = error instanceof Error ? error.message : 'An unexpected error occurred'
+    if (isHtmx) {
+      set.headers['HX-Trigger'] = JSON.stringify({ showToast: { message, type: 'error' } })
+      return ''
+    }
+    set.status = 500
+    return 'Internal server error'
+  })
   .listen(process.env.PORT || 3000)
 
 console.log(`Server running at http://localhost:3000`)

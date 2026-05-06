@@ -6,7 +6,8 @@ import { generateReceiptNumber } from '../services/receipt'
 import { generateReceiptPdf } from '../services/pdf'
 
 export const receiptRoutes = new Elysia()
-  .post('/receipts/:id/generate', async ({ params, set }) => {
+  .post('/receipts/:id/generate', async ({ params, set, ...ctx }) => {
+    const user = (ctx as any).user
     const txId = parseInt(params.id, 10)
     if (isNaN(txId)) {
       set.status = 400
@@ -22,6 +23,22 @@ export const receiptRoutes = new Elysia()
     if (!tx) {
       set.status = 404
       return { error: 'Transaction not found' }
+    }
+
+    if (tx.receiptNo) {
+      const [existingFile] = await db
+        .select()
+        .from(receiptFiles)
+        .where(eq(receiptFiles.transactionId, txId))
+        .limit(1)
+      if (existingFile) {
+        return new Response(existingFile.pdfBlob, {
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="receipt-${tx.receiptNo}.pdf"`,
+          },
+        })
+      }
     }
 
     if (tx.status !== 'Mapped') {
@@ -67,7 +84,7 @@ export const receiptRoutes = new Elysia()
     await db.transaction(async (txDb) => {
       await txDb
         .update(transactions)
-        .set({ receiptNo, status: 'Receipt Generated' as const })
+        .set({ receiptNo, status: 'Receipt Generated' as const, generatedBy: user.username, generatedAt: new Date() })
         .where(eq(transactions.id, txId))
 
       await txDb.insert(receiptFiles).values({

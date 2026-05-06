@@ -4,6 +4,7 @@ import { transactionHeaders, transactions } from '../db/schema'
 import { parseExcel } from '../services/excel'
 import { autoMapTransactions } from '../services/mapping'
 import { modal, previewContent } from '../views/components/modal'
+import { inArray } from 'drizzle-orm'
 
 const previewStore = new Map<string, { rows: Record<string, string | number>[] }>()
 
@@ -39,8 +40,12 @@ ${modal('upload-preview', 'Preview Upload', content, true)}
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ saveId: id }),
-    }).then(() => {
-      window.location.href = '/'
+    }).then(r => r.json()).then(data => {
+      window.showToast('Batch saved successfully', 'success')
+      if (data.skipped > 0) {
+        window.showToast(data.skipped + ' duplicate transaction(s) skipped', 'info')
+      }
+      setTimeout(function() { window.location.href = '/' }, 1200)
     }).catch(() => {
       alert('Save failed')
       btn.disabled = false
@@ -64,6 +69,8 @@ ${modal('upload-preview', 'Preview Upload', content, true)}
     }
 
     try {
+      let skippedTotal = 0
+
       await db.transaction(async (tx) => {
         const byBank: Record<string, typeof data.rows> = {}
         for (const row of data.rows) {
@@ -72,29 +79,40 @@ ${modal('upload-preview', 'Preview Upload', content, true)}
           byBank[bank]!.push(row)
         }
 
+        const allTxNos = data.rows.map((r) => String(r.transactionNo))
+        const existing = await tx
+          .select({ transactionNo: transactions.transactionNo })
+          .from(transactions)
+          .where(inArray(transactions.transactionNo, allTxNos))
+        const existingSet = new Set(existing.map((e) => e.transactionNo))
+
         for (const [bank, bankRows] of Object.entries(byBank)) {
+          const uniqueRows = bankRows.filter((r) => !existingSet.has(String(r.transactionNo)))
+          const skipped = bankRows.length - uniqueRows.length
+          skippedTotal += skipped
+
+          if (uniqueRows.length === 0) continue
+
           const [header] = await tx.insert(transactionHeaders).values({
             bank: bank as 'BCA' | 'MUFG' | 'HSBC',
             uploadDate: new Date(),
-            totalTransactions: bankRows.length,
-            unmappedCount: bankRows.length,
+            totalTransactions: uniqueRows.length,
+            unmappedCount: uniqueRows.length,
             mappedCount: 0,
             status: 'Draft',
           }).$returningId()
 
           if (!header) throw new Error('Failed to create header')
 
-          const txRows = bankRows.map((r) => {
-            return {
-              headerId: header.id,
-              transactionNo: String(r.transactionNo),
-              transactionDate: String(r.transactionDate),
-              amount: String(r.amount),
-              senderAccountNo: String(r.senderAccountNo),
-              senderName: String(r.senderName),
-              status: 'Unmapped' as const,
-            }
-          })
+          const txRows = uniqueRows.map((r) => ({
+            headerId: header.id,
+            transactionNo: String(r.transactionNo),
+            transactionDate: String(r.transactionDate),
+            amount: String(r.amount),
+            senderAccountNo: String(r.senderAccountNo),
+            senderName: String(r.senderName),
+            status: 'Unmapped' as const,
+          }))
           await tx.insert(transactions).values(txRows as any)
           await autoMapTransactions(tx as any, header.id)
         }
@@ -102,8 +120,7 @@ ${modal('upload-preview', 'Preview Upload', content, true)}
 
       previewStore.delete(body.saveId)
 
-      set.status = 200
-      return { success: true }
+      return { success: true, skipped: skippedTotal }
     } catch (e) {
       console.error('Save failed:', e)
       set.status = 500

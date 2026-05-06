@@ -36,11 +36,13 @@ function paginationControls(p: Pagination): string {
 <div class="flex items-center justify-between mt-3 text-sm text-gray-500">
   <button ${prevDisabled ? 'disabled' : ''}
     hx-get="/?page=${p.page - 1}" hx-target="#table-container" hx-swap="innerHTML"
+    hx-indicator="#table-indicator"
     ${filterParams}
     class="px-3 py-1 border rounded ${prevDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-gray-700'}">Previous</button>
   <span>Page ${p.page} of ${p.totalPages} (${p.total} batches)</span>
   <button ${nextDisabled ? 'disabled' : ''}
     hx-get="/?page=${p.page + 1}" hx-target="#table-container" hx-swap="innerHTML"
+    hx-indicator="#table-indicator"
     ${filterParams}
     class="px-3 py-1 border rounded ${nextDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-gray-700'}">Next</button>
 </div>`
@@ -174,6 +176,7 @@ export function headerListPage(headers: HeaderRow[], filters: Record<string, str
         </select>
       </div>
       <button hx-get="/" hx-target="#table-container" hx-swap="innerHTML"
+              hx-indicator="#table-indicator"
               hx-include="[name='dateFrom'],[name='dateTo'],[name='bank'],[name='status']"
               class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-1.5 rounded text-sm">
         Apply
@@ -197,6 +200,10 @@ export function headerListPage(headers: HeaderRow[], filters: Record<string, str
   </div>
 
   <div id="table-container">
+    <div id="table-indicator" class="htmx-indicator flex justify-center py-4">
+      <div class="spinner" style="border-color:#0096a9;border-top-color:transparent;"></div>
+      <span class="text-sm text-gray-500 ml-2">Loading...</span>
+    </div>
     ${renderTable(headers, headers.length > 0, pagination)}
   </div>`
 }

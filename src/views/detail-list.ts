@@ -64,7 +64,7 @@ function clientCell(r: DetailRow): string {
 
 function actionButton(r: DetailRow): string {
   if (r.status === 'Mapped') {
-    return `<button onclick="generateReceipt(${r.id})" id="gen-receipt-${r.id}"
+    return `<button onclick="if(confirm('Generate receipt? This cannot be undone.'))generateReceipt(${r.id})" id="gen-receipt-${r.id}"
             class="px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded">Generate Receipt</button>`
   }
   if (r.status === 'Receipt Generated') {
@@ -83,11 +83,13 @@ function paginationControls(pagination: Pagination, headerId: number): string {
   <button ${prevDisabled ? 'disabled' : ''}
     hx-get="/transactions/${headerId}?page=${pagination.page - 1}"
     hx-target="#detail-table-container" hx-swap="innerHTML"
+    hx-indicator="#detail-table-indicator"
     class="px-3 py-1 text-sm border rounded ${prevDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-gray-700'}">Previous</button>
   <span class="text-sm text-gray-500">Page ${pagination.page} of ${pagination.totalPages} (${pagination.total} rows)</span>
   <button ${nextDisabled ? 'disabled' : ''}
     hx-get="/transactions/${headerId}?page=${pagination.page + 1}"
     hx-target="#detail-table-container" hx-swap="innerHTML"
+    hx-indicator="#detail-table-indicator"
     class="px-3 py-1 text-sm border rounded ${nextDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-gray-700'}">Next</button>
 </div>`
 }
@@ -119,6 +121,10 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
 
   return `
 <div id="detail-table-container">
+  <div id="detail-table-indicator" class="htmx-indicator flex justify-center py-4">
+    <div class="spinner" style="border-color:#0096a9;border-top-color:transparent;"></div>
+    <span class="text-sm text-gray-500 ml-2">Loading...</span>
+  </div>
   <div class="max-h-[450px] overflow-y-auto border-b">
     <table class="w-full bg-white">
       <thead>
@@ -164,7 +170,10 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ assignments: assignments }),
-    }).then(function() { window.location.reload() }).catch(function() {
+    }).then(function() {
+      window.showToast('Saved ' + window.__pickerStore.items.length + ' changes', 'success')
+      setTimeout(function() { window.location.reload() }, 1000)
+    }).catch(function() {
       alert('Save failed')
       window.updateSaveButton()
     })
@@ -201,7 +210,8 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
         a.click()
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
-        window.location.reload()
+        window.showToast('Receipt generated', 'success')
+        setTimeout(function() { window.location.reload() }, 1000)
       })
       .catch(function() {
         alert('Failed to generate receipt')
@@ -230,6 +240,7 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
         a.click()
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
+        window.showToast('PDF downloaded', 'success')
       })
       .catch(function() {
         alert('Failed to download PDF')
@@ -271,7 +282,7 @@ export function detailTableContainer(rows: DetailRow[], pagination: Pagination, 
       }
     })
 
-    window.addEventListener('scroll', function() { if (activePicker) closeDropdown() }, true)
+    window.addEventListener('scroll', function(e) { if (activePicker && !dropdown.contains(e.target)) closeDropdown() }, true)
   }
 
   function showDropdown(picker) {

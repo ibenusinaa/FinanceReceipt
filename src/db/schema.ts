@@ -50,6 +50,10 @@ export const transactions = mysqlTable('transactions', {
   clientId: int('client_id').references(() => clients.id),
   receiptNo: varchar('receipt_no', { length: 50 }).unique(),
   status: mysqlEnum('status', ['Unmapped', 'Mapped', 'Receipt Generated']).notNull().default('Unmapped'),
+  assignedBy: varchar('assigned_by', { length: 255 }),
+  assignedAt: datetime('assigned_at'),
+  generatedBy: varchar('generated_by', { length: 255 }),
+  generatedAt: datetime('generated_at'),
   createdAt: datetime('created_at').notNull().$defaultFn(() => new Date()),
   updatedAt: datetime('updated_at').notNull().$defaultFn(() => new Date()).$onUpdateFn(() => new Date()),
 })
